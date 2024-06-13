@@ -1,16 +1,19 @@
 from trac.core import *
 from trac.config import Option
-from trac.web.api import IAuthenticator
+from trac.web.api import IRequestFilter
 
 import sys
 
 class RemoteUserAuthenticator(Component):
-    implements(IAuthenticator)
+    implements(IRequestFilter)
 
     remote_user_header = Option('trac', 'remote_user_header', 'remote-user',
                """What header should be read from for auth""")
 
-    def authenticate(self, req):
+    def pre_process_request(self, req, handler):
         if self.remote_user_header:
-            return req.get_header(self.remote_user_header)
-        return None
+            req.environ['REMOTE_USER'] = req.get_header(self.remote_user_header)
+        return handler
+
+    def post_process_request(self, req, template, data, metadata):
+        return template, data
